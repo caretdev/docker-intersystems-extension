@@ -1,0 +1,101 @@
+{
+  "repositories": [
+    {
+      "repository": "intersystems/iris-community",
+      "tags": [
+        "2020.1.1.408.0",
+        "2020.3.0.221.0",
+        "2020.4.0.547.0",
+        "2021.1.0.215.3",
+        "2021.2.0.651.0",
+        "2022.1.0.199.0"
+      ]
+    },
+    {
+      "repository": "intersystems/iris-community-arm64",
+      "tags": [
+        "2020.3.0.221.0",
+        "2020.4.0.547.0",
+        "2021.1.0.215.3",
+        "2021.2.0.651.0",
+        "2022.1.0.199.0"
+      ]
+    },
+    {
+      "repository": "intersystems/iris-ml-community",
+      "tags": [
+        "2020.3.0.304.0",
+        "2021.1.0.215.3",
+        "2021.2.0.651.0",
+        "2022.1.0.199.0"
+      ]
+    },
+    {
+      "repository": "intersystems/iris-ml-community-arm64",
+      "tags": [
+        "2021.2.0.651.0",
+        "2022.1.0.191.0",
+        "2022.1.0.199.0"
+      ]
+    },
+    {
+      "repository": "intersystems/irishealth-aa-community",
+      "tags": [
+        "2020.3.0AA.331.0"
+      ]
+    },
+    {
+      "repository": "intersystems/irishealth-community",
+      "tags": [
+        "2020.1.1.408.0",
+        "2020.3.0.221.0",
+        "2020.4.0.547.0",
+        "2021.1.0.215.3",
+        "2021.2.0.651.0",
+        "2022.1.0.199.0"
+      ]
+    },
+    {
+      "repository": "intersystems/irishealth-community-arm64",
+      "tags": [
+        "2020.3.0.221.0",
+        "2020.4.0.547.0",
+        "2021.1.0.215.3",
+        "2021.2.0.651.0",
+        "2022.1.0.199.0"
+      ]
+    },
+    {
+      "repository": "intersystems/irishealth-ml-community",
+      "tags": [
+        "2020.3.0.304.0",
+        "2021.1.0.215.3",
+        "2021.2.0.651.0",
+        "2022.1.0.199.0"
+      ]
+    },
+    {
+      "repository": "intersystems/irishealth-ml-community-arm64",
+      "tags": [
+        "2021.2.0.651.0",
+        "2022.1.0.152.0",
+        "2022.1.0.164.0",
+        "2022.1.0.172.0",
+        "2022.1.0.199.0"
+      ]
+    },
+    {
+      "repository": "intersystems/passwordhash",
+      "tags": [
+        "1.1"
+      ]
+    },
+    {
+      "repository": "intersystems/sam",
+      "tags": [
+        "1.0.0.115",
+        "1.1.0.107"
+      ]
+    }
+  ]
+}

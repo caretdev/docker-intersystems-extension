@@ -1,0 +1,31 @@
+{
+  "icon": "intersystems.svg",
+  "ui": {
+    "dashboard-tab": {
+      "title": "InterSystems",
+      "src": "index.html",
+      "root": "ui"
+    }
+  },
+  "host": {
+    "binaries": [
+      {
+        "darwin": [
+          {
+            "path": "/darwin/docker-ls"
+          }
+        ],
+        "windows": [
+          {
+            "path": "/windows/docker-ls.exe"
+          }
+        ],
+        "linux": [
+          {
+            "path": "/linux/docker-ls"
+          }
+        ]
+      }
+    ]
+  }
+}
