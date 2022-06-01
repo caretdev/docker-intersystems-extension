@@ -20,7 +20,13 @@ docker extensions
 And to install this extensions, just use this command
 
 ```shell
-docker extensions install caretdev/intersystems-extension:0.0.1
+docker extensions install caretdev/intersystems-extension:0.0.2
+```
+
+Or update alredy installed extension
+
+```shell
+docker extensions update caretdev/intersystems-extension:0.0.2
 ```
 
 And you can access to installed extension from Extensions list in Docker Desktop
