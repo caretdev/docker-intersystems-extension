@@ -6,8 +6,10 @@ import Box from '@mui/material/Box';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import LinearProgress from '@mui/material/LinearProgress';
-
+import Typography from '@mui/material/Typography';
 import { createDockerDesktopClient } from '@docker/extension-api-client';
+import { AppBar, IconButton, Snackbar, Toolbar } from '@mui/material';
+import { Refresh } from '@mui/icons-material';
 
 const REGISTRY = 'containers.intersystems.com';
 
@@ -35,10 +37,14 @@ const setFlags = (repo: { name: string; tags: string[] }): Image => {
         : 'general'
       : 'any';
   const repository = `${REGISTRY}/intersystems`;
+  const publicAccess =
+    repo.name.includes('-community') ||
+    ['passwordhash', 'sam'].includes(repo.name);
   return {
     repository,
     name,
     fullName: `${repository}/${name}`,
+    publicAccess,
     tags,
     arch,
     edition,
@@ -61,32 +67,33 @@ try {
 } catch (err) {
   ddClientError = err.message;
 }
-var imagesLoaded = false;
+let imagesLoaded = false;
+let allImages: Image[] = [];
+let needUpdateRegistry = !localStorage.hasOwnProperty(REGISTRY);
+
+const copyToClipboard = (value: string) => {
+  navigator.clipboard.writeText(value);
+  ddClient?.desktopUI?.toast?.success(`${value} copied to clipboard`);
+};
 
 interface DockerImage {
   RepoTags: string[];
 }
-export function App() {
-  const importData = async (): Promise<DockerLSResponse> => {
-    if (localStorage.hasOwnProperty(REGISTRY)) {
-      return Promise.resolve(JSON.parse(localStorage.getItem(REGISTRY) || ''));
-    }
-    return fetch('all.json').then((res) => res.json());
-  };
 
-  const [value, setValue] = React.useState(0);
-  const [errorMsg] = React.useState(ddClientError);
-  const [images, setImages] = React.useState<Image[]>([]);
-  const [loaded, setLoaded] = React.useState<string[] | null>(null);
-  const [loading, setLoading] = React.useState(false);
-
-  if (!imagesLoaded) {
-    importData().then((images) => setImages(getImages(images)));
+const importData = async (): Promise<Image[]> => {
+  if (localStorage.hasOwnProperty(REGISTRY)) {
+    return Promise.resolve(
+      JSON.parse(localStorage.getItem(REGISTRY) || ''),
+    ).then((images) => getImages(images));
   }
-  if (!imagesLoaded && ddClient?.extension?.host) {
-    setLoading(true);
-    imagesLoaded = true;
-    ddClient.extension.host.cli
+  return fetch('all.json')
+    .then((res) => res.json())
+    .then((images) => getImages(images));
+};
+
+const loadRegistry = () => {
+  if (ddClient?.extension?.host) {
+    return ddClient.extension.host.cli
       .exec('docker-ls', [
         '--registry',
         `https://${REGISTRY}`,
@@ -98,24 +105,60 @@ export function App() {
       .then(({ stdout }) => {
         localStorage.setItem(REGISTRY, stdout);
         return getImages(JSON.parse(stdout));
-      })
-      .then((images) => setImages(images))
-      .catch((err) => {
-        ddClient.desktopUI.toast.error(err.message);
-      })
-      .finally(() => {
-        setLoading(false);
       });
-    ddClient.docker
-      .listImages()
-      .then((list) => {
-        return (list as DockerImage[])
-          .flatMap((el) => el.RepoTags)
-          .filter((el) => el.startsWith(REGISTRY));
-      })
-      .then((list) => {
+  }
+  return Promise.resolve(allImages);
+};
+
+const loadDockerImages = () => {
+  if (ddClient?.docker?.listImages) {
+    return ddClient.docker.listImages().then((list) => {
+      return (list as DockerImage[])
+        .filter((el) => el.RepoTags)
+        .flatMap((el) => el.RepoTags)
+        .filter((el) => el.startsWith(REGISTRY));
+    });
+  }
+  return Promise.resolve([]);
+};
+
+export function App() {
+  const [value, setValue] = React.useState(0);
+  const [errorMsg] = React.useState(ddClientError);
+  const [images, setImages] = React.useState<Image[]>(allImages);
+  const [loaded, setLoaded] = React.useState<string[] | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [updateRegistry, setUpdateRegistry] =
+    React.useState(needUpdateRegistry);
+
+  if (!allImages.length) {
+    importData().then((images) => {
+      allImages = images;
+      setImages(images);
+    });
+  }
+  if (ddClient?.extension?.host) {
+    if (updateRegistry) {
+      setLoading(true);
+      setUpdateRegistry(false);
+      loadRegistry()
+        .then((images) => {
+          allImages = images;
+          setImages(images);
+        })
+        .catch((err) => {
+          ddClient.desktopUI.toast.error(err.message);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+    if (!imagesLoaded) {
+      imagesLoaded = true;
+      loadDockerImages().then((list) => {
         setLoaded(list);
       });
+    }
   }
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -132,30 +175,56 @@ export function App() {
       );
   };
 
+  const rmImage = (image: string, tag: string) => {
+    const fullName = `${image}:${tag}`;
+    setLoaded([...(loaded || []), fullName]);
+    ddClient?.docker.cli
+      .exec('rm', [fullName])
+      .then(() =>
+        ddClient.desktopUI.toast.warning(`Docker image ${fullName} deleted`),
+      );
+  };
+
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        overflow: 'hidden',
-      }}
-    >
-      {errorMsg && <Alert severity="error">{errorMsg}</Alert>}
+    <>
+      <AppBar position="fixed" color="transparent">
+        <Toolbar>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            containers.intersystems.com
+          </Typography>
+          <IconButton
+            size="large"
+            aria-label="refresh"
+            color="inherit"
+            onClick={() => setUpdateRegistry(true)}
+          >
+            <Refresh />
+          </IconButton>
+        </Toolbar>
+      </AppBar>
       <Box>
+        {errorMsg && (
+          <Snackbar
+            open
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          >
+            <Alert severity="error">{errorMsg}</Alert>
+          </Snackbar>
+        )}
+        <Toolbar />
         <Tabs value={value} onChange={handleChange}>
           <Tab label="IRIS" value={0} />
           <Tab label="TOOLS" value={1} />
         </Tabs>
-      </Box>
-      {loading && <LinearProgress />}
-      <Box>
+        {loading && <LinearProgress />}
         <TabPanel value={value} index={0}>
           <Images
             images={images}
             loaded={loaded}
             kind={'iris'}
-            onPull={ddClient ? pullImage : null}
+            onPull={pullImage}
+            onDelete={rmImage}
+            onCopy={copyToClipboard}
           />
         </TabPanel>
         <TabPanel value={value} index={1}>
@@ -163,10 +232,12 @@ export function App() {
             images={images}
             loaded={loaded}
             kind={'tools'}
-            onPull={ddClient ? pullImage : null}
+            onPull={pullImage}
+            onDelete={rmImage}
+            onCopy={copyToClipboard}
           />
         </TabPanel>
       </Box>
-    </Box>
+    </>
   );
 }

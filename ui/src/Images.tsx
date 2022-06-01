@@ -1,5 +1,6 @@
 import * as React from 'react';
 import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -11,7 +12,16 @@ import Switch from '@mui/material/Switch';
 import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormControl from '@mui/material/FormControl';
-
+import Tooltip from '@mui/material/Tooltip';
+import Input from '@mui/material/Input';
+import InputLabel from '@mui/material/InputLabel';
+import InputAdornment from '@mui/material/InputAdornment';
+import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
+import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import ClearOutlinedIcon from '@mui/icons-material/ClearOutlined';
+import LockIcon from '@mui/icons-material/Lock';
+import { Link, Grid } from '@mui/material';
+import { PublicOutlined } from '@mui/icons-material';
 interface ImagesProps {
   images: Image[];
   loaded: string[] | null;
@@ -19,6 +29,8 @@ interface ImagesProps {
   arm?: boolean;
   community?: boolean;
   onPull: ((image: string, tag: string) => void) | null;
+  onDelete: ((image: string, tag: string) => void) | null;
+  onCopy: ((value: string) => void) | null;
 }
 
 type RepositoryKind = 'iris' | 'tools';
@@ -33,6 +45,7 @@ export interface Image {
   arch: RepositoryArch;
   edition: RepositoryEdition;
   kind: RepositoryKind;
+  publicAccess: boolean;
 }
 
 const sortVersions = (a: string, b: string) => {
@@ -49,16 +62,16 @@ const sortVersions = (a: string, b: string) => {
   return 0;
 };
 
-const sortIRISTags = (tags: string[], uniqueMajor: boolean) => {
+const sortTags = (tags: string[], uniqueMajor: boolean) => {
   if (tags.length === 1) {
     return tags;
   }
-  if (tags[0].split('.').length !== 5) {
-    return tags;
-  }
-  if (!/20\d\d/.test(tags[0].split('.')[0])) {
-    return tags;
-  }
+  // if (tags[0].split('.').length !== 5) {
+  //   return tags;
+  // }
+  // if (!/20\d\d/.test(tags[0].split('.')[0])) {
+  //   return tags;
+  // }
   const sorted = tags.sort(sortVersions).reverse();
   if (!uniqueMajor) {
     return sorted;
@@ -68,8 +81,8 @@ const sortIRISTags = (tags: string[], uniqueMajor: boolean) => {
   for (let i = 1; i < sorted.length; i++) {
     const version = sorted[i];
     if (
-      version.split('.').slice(0, 1).join('.') !==
-      prev.split('.').slice(0, 1).join('.')
+      version.split('.').slice(0, 2).join('.') !==
+      prev.split('.').slice(0, 2).join('.')
     ) {
       unique.push(version);
     }
@@ -92,32 +105,6 @@ const irisTag = (tag: string) => {
   );
 };
 
-const filterImages = (
-  images: Image[],
-  kind: RepositoryKind,
-  community: boolean,
-  arm: boolean,
-  uniqueMajor: boolean,
-) => {
-  const result = images
-    .filter((repo) => kind && kind === repo.kind)
-    .filter((repo) =>
-      community
-        ? ['community', 'any'].includes(repo.edition)
-        : ['general', 'any'].includes(repo.edition),
-    )
-    .filter((repo) =>
-      arm
-        ? ['arm64', 'any'].includes(repo.arch)
-        : ['x64', 'any'].includes(repo.arch),
-    )
-    .map((repo) => ({
-      ...repo,
-      tags: sortIRISTags(repo.tags, uniqueMajor),
-    }));
-  return result;
-};
-
 const isARM =
   window.navigator.platform.startsWith('Mac') &&
   !window.navigator.platform.endsWith('Intel');
@@ -129,6 +116,32 @@ export function Images(props: ImagesProps) {
   );
   const [arm, setArm] = React.useState(isARM);
   const [uniqueMajor, setUniqueMajor] = React.useState(true);
+  const [filterName, setFilterName] = React.useState('');
+  const [filterTag, setFilterTag] = React.useState('');
+  const [seeMore, setSeeMore] = React.useState<{ [key: string]: boolean }>({});
+
+  const filterImages = (images: Image[]) => {
+    const result = images
+      .filter((repo) => kind && kind === repo.kind)
+      .filter((repo) =>
+        community
+          ? ['community', 'any'].includes(repo.edition)
+          : ['general', 'any'].includes(repo.edition),
+      )
+      .filter((repo) =>
+        arm
+          ? ['arm64', 'any'].includes(repo.arch)
+          : ['x64', 'any'].includes(repo.arch),
+      )
+      .filter((repo) => !filterName || repo.name.includes(filterName))
+      .map((repo) => ({
+        ...repo,
+        tags: sortTags(repo.tags, uniqueMajor).filter(
+          (tag) => !filterTag || tag.includes(filterTag),
+        ),
+      }));
+    return result;
+  };
 
   return (
     <Box>
@@ -160,21 +173,27 @@ export function Images(props: ImagesProps) {
               labelPlacement="start"
             />
             <span></span>
-            <FormControlLabel
-              sx={{ alignSelf: 'flex-end' }}
-              control={
-                <Switch
-                  checked={uniqueMajor}
-                  onChange={(e) => setUniqueMajor(e.target.checked)}
-                />
-              }
-              label="Major versions only"
-              labelPlacement="start"
-            />
+            <Tooltip title="e.g. 2022.1.*, 2021.2.*, 20221.1.*, 1.1.*, 0.1.*">
+              <FormControlLabel
+                sx={{ alignSelf: 'flex-end' }}
+                control={
+                  <Switch
+                    checked={uniqueMajor}
+                    onChange={(e) => setUniqueMajor(e.target.checked)}
+                  />
+                }
+                label="Major versions"
+                labelPlacement="start"
+              />
+            </Tooltip>
           </FormGroup>
         </FormControl>
       </Box>
-      <TableContainer sx={{ maxHeight: 'calc(100vh - 120px)' }}>
+      <TableContainer
+        sx={{
+          maxHeight: 'calc(100vh - 186px)',
+        }}
+      >
         <Table
           stickyHeader
           size="small"
@@ -183,48 +202,171 @@ export function Images(props: ImagesProps) {
         >
           <TableHead>
             <TableRow>
-              <TableCell>NAME</TableCell>
-              <TableCell>TAGS</TableCell>
+              <TableCell>
+                <FormControl
+                  fullWidth
+                  sx={{ minWidth: '30ch' }}
+                  variant="standard"
+                >
+                  <InputLabel htmlFor="standard-adornment-password">
+                    NAME
+                  </InputLabel>
+                  <Input
+                    id="filter-name"
+                    type="text"
+                    value={filterName}
+                    onChange={(e) => setFilterName(e.target.value)}
+                    endAdornment={
+                      <InputAdornment position="end">
+                        {filterName ? (
+                          <IconButton onClick={() => setFilterName('')}>
+                            <ClearOutlinedIcon />
+                          </IconButton>
+                        ) : (
+                          <SearchOutlinedIcon />
+                        )}
+                      </InputAdornment>
+                    }
+                  />
+                </FormControl>
+              </TableCell>
+              <TableCell>
+                <FormControl
+                  fullWidth
+                  sx={{ minWidth: '20ch' }}
+                  variant="standard"
+                >
+                  <InputLabel htmlFor="standard-adornment-password">
+                    TAGS
+                  </InputLabel>
+                  <Input
+                    type="text"
+                    value={filterTag}
+                    onChange={(e) => setFilterTag(e.target.value)}
+                    endAdornment={
+                      <InputAdornment position="end">
+                        {filterTag ? (
+                          <IconButton onClick={() => setFilterTag('')}>
+                            <ClearOutlinedIcon />
+                          </IconButton>
+                        ) : (
+                          <SearchOutlinedIcon />
+                        )}
+                      </InputAdornment>
+                    }
+                  />
+                </FormControl>
+              </TableCell>
               {/* <TableCell>SIZE</TableCell> */}
               {/* <TableCell>LAST PUSHED</TableCell> */}
               <TableCell width={'100%'}></TableCell>
             </TableRow>
           </TableHead>
-          {filterImages(images, kind, community, arm, uniqueMajor).map(
-            (image) => (
-              <TableBody key={image.name}>
-                {image.tags.map((tag, ind) => (
+          {filterImages(images).map((image) => (
+            <TableBody key={image.name}>
+              {image.tags.map((tag, ind) =>
+                !seeMore[image.fullName] && ind > 2 ? null : (
                   <TableRow
                     hover
                     key={`${image.name}:${tag}`}
-                    sx={{ '&:not(:last-child) td': { border: 0 } }}
+                    sx={{
+                      '&:not(:last-child) td': { border: 0 },
+                    }}
                   >
                     <TableCell>
-                      {ind === 0 && <b> {image.fullName}</b>}
+                      {ind === 0 && (
+                        <Grid
+                          container
+                          direction="row"
+                          alignItems="center"
+                          spacing={1}
+                          sx={{
+                            flexWrap: 'nowrap'
+                          }}
+                        >
+                          <Grid item >
+                            {image.publicAccess ? (
+                              <PublicOutlined />
+                            ) : (
+                              <LockIcon />
+                            )}
+                          </Grid>
+                          <Grid item>
+                            <b>{image.fullName}</b>
+                          </Grid>
+                        </Grid>
+                      )}
                     </TableCell>
-                    <TableCell>{irisTag(tag)}</TableCell>
+                    <TableCell
+                      sx={{
+                        '&:hover .hover-btn': {
+                          visibility: 'visible',
+                        },
+                      }}
+                    >
+                      {irisTag(tag)}
+                      {props.onCopy && (
+                        <Tooltip title="Copy image name with tag to clipboard">
+                          <IconButton
+                            className="hover-btn"
+                            sx={{ visibility: 'hidden' }}
+                            onClick={() =>
+                              props.onCopy &&
+                              props.onCopy(`${image.fullName}:${tag}`)
+                            }
+                          >
+                            <ContentCopyOutlinedIcon />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </TableCell>
                     {/* <TableCell></TableCell> */}
                     {/* <TableCell></TableCell> */}
                     <TableCell align="right">
-                      {props.onPull &&
-                        loaded &&
-                        !loaded.includes(`${image.fullName}:${tag}`) && (
-                          <Button
-                            size="small"
-                            variant="contained"
-                            onClick={() =>
-                              props.onPull && props.onPull(image.fullName, tag)
-                            }
-                          >
-                            Pull
-                          </Button>
-                        )}
+                      {(!loaded ||
+                        !loaded.includes(`${image.fullName}:${tag}`)) && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() =>
+                            props.onPull && props.onPull(image.fullName, tag)
+                          }
+                        >
+                          Pull
+                        </Button>
+                      )}
+                      {loaded && loaded.includes(`${image.fullName}:${tag}`) && (
+                        <Button size="small" variant="outlined" color="error">
+                          Delete
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            ),
-          )}
+                ),
+              )}
+              {!seeMore[image.fullName] && image.tags.length > 3 && (
+                <TableRow
+                  sx={{
+                    '&:not(:nth-of-type(n+4))': { display: 'none' },
+                  }}
+                >
+                  <TableCell />
+                  <TableCell colSpan={2}>
+                    <Link
+                      variant="body1"
+                      href="#"
+                      underline="none"
+                      onClick={() =>
+                        setSeeMore({ ...seeMore, [image.fullName]: true })
+                      }
+                    >
+                      <b>See more</b>
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          ))}
         </Table>
       </TableContainer>
     </Box>
