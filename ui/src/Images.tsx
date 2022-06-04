@@ -25,6 +25,7 @@ import { PublicOutlined } from '@mui/icons-material';
 interface ImagesProps {
   images: Image[];
   loaded: string[] | null;
+  root: 'intersystems' | 'iscinternal';
   kind: 'iris' | 'tools';
   arm?: boolean;
   community?: boolean;
@@ -39,6 +40,7 @@ type RepositoryArch = 'any' | 'x64' | 'arm64';
 
 export interface Image {
   repository: string;
+  root: string;
   name: string;
   fullName: string;
   tags: string[];
@@ -49,6 +51,12 @@ export interface Image {
 }
 
 const sortVersions = (a: string, b: string) => {
+  if ('latest' === a) {
+    return 1;
+  }
+  if ('latest' === b) {
+    return -1;
+  }
   var a1 = a.split('.');
   var b1 = b.split('.');
   var len = Math.max(a1.length, b1.length);
@@ -110,7 +118,7 @@ const isARM =
   !window.navigator.platform.endsWith('Intel');
 
 export function Images(props: ImagesProps) {
-  const { kind, images, loaded } = props;
+  const { kind, images, loaded, root } = props;
   const [community, setCommunity] = React.useState(
     !images.find((image) => image.name === 'iris'),
   );
@@ -123,6 +131,7 @@ export function Images(props: ImagesProps) {
   const filterImages = (images: Image[]) => {
     const result = images
       .filter((repo) => kind && kind === repo.kind)
+      .filter((repo) => root && root === repo.root)
       .filter((repo) =>
         community
           ? ['community', 'any'].includes(repo.edition)

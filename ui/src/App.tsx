@@ -22,8 +22,12 @@ interface DockerLSResponse {
   repositories: DockerLSRepository[];
 }
 
-const setFlags = (repo: { name: string; tags: string[] }): Image => {
-  const { name, tags } = repo;
+const setFlags = (repo: {
+  root: string;
+  name: string;
+  tags: string[];
+}): Image => {
+  const { root, name, tags } = repo;
   const arch = repo.name.endsWith('-arm64') ? 'arm64' : 'x64';
   const repoParts = repo.name.split('-');
   const kind =
@@ -36,14 +40,16 @@ const setFlags = (repo: { name: string; tags: string[] }): Image => {
         ? 'community'
         : 'general'
       : 'any';
-  const repository = `${REGISTRY}/intersystems`;
+  const repository = `${REGISTRY}`;
   const publicAccess =
-    repo.name.includes('-community') ||
-    ['passwordhash', 'sam'].includes(repo.name);
+    root === 'intersystems' &&
+    (repo.name.includes('-community') ||
+      ['passwordhash', 'sam'].includes(repo.name));
   return {
     repository,
+    root,
     name,
-    fullName: `${repository}/${name}`,
+    fullName: `${REGISTRY}/${root}/${name}`,
     publicAccess,
     tags,
     arch,
@@ -55,7 +61,8 @@ const setFlags = (repo: { name: string; tags: string[] }): Image => {
 const getImages = (data: DockerLSResponse) => {
   return data.repositories
     .map((repo) => ({
-      name: repo.repository.split('/')[1],
+      root: repo.repository.split('/')[0],
+      name: repo.repository.split('/').slice(1).join('/'),
       tags: repo.tags,
     }))
     .map((repo) => setFlags(repo));
@@ -123,6 +130,7 @@ const loadDockerImages = () => {
 };
 
 export function App() {
+  const [showInternal, setShowInternal] = React.useState(false);
   const [value, setValue] = React.useState(0);
   const [errorMsg] = React.useState(ddClientError);
   const [images, setImages] = React.useState<Image[]>(allImages);
@@ -135,6 +143,7 @@ export function App() {
     importData().then((images) => {
       allImages = images;
       setImages(images);
+      setShowInternal(!!images.find((image) => image.root === 'iscinternal'));
     });
   }
   if (ddClient?.extension?.host) {
@@ -145,6 +154,9 @@ export function App() {
         .then((images) => {
           allImages = images;
           setImages(images);
+          setShowInternal(
+            !!images.find((image) => image.root === 'iscinternal'),
+          );
         })
         .catch((err) => {
           ddClient.desktopUI.toast.error(err.message);
@@ -215,6 +227,7 @@ export function App() {
         <Tabs value={value} onChange={handleChange}>
           <Tab label="IRIS" value={0} />
           <Tab label="TOOLS" value={1} />
+          {showInternal && <Tab label="ISC" value={2} />}
         </Tabs>
         {loading && <LinearProgress />}
         <TabPanel value={value} index={0}>
@@ -222,6 +235,7 @@ export function App() {
             images={images}
             loaded={loaded}
             kind={'iris'}
+            root="intersystems"
             onPull={pullImage}
             onDelete={rmImage}
             onCopy={copyToClipboard}
@@ -232,11 +246,25 @@ export function App() {
             images={images}
             loaded={loaded}
             kind={'tools'}
+            root="intersystems"
             onPull={pullImage}
             onDelete={rmImage}
             onCopy={copyToClipboard}
           />
         </TabPanel>
+        {showInternal && (
+          <TabPanel value={value} index={2}>
+            <Images
+              images={images}
+              loaded={loaded}
+              kind={'tools'}
+              root="iscinternal"
+              onPull={pullImage}
+              onDelete={rmImage}
+              onCopy={copyToClipboard}
+            />
+          </TabPanel>
+        )}
       </Box>
     </>
   );
