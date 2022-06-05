@@ -14,19 +14,19 @@ And it requires Docker Extensions SDK installed manually, to be able to install 
 After installing SDK, docker command will be able to use new command
 
 ```shell
-docker extensions
+docker extension ls
 ```
 
 And to install this extensions, just use this command
 
 ```shell
-docker extensions install caretdev/intersystems-extension:0.0.3
+docker extension install caretdev/intersystems-extension:0.0.3
 ```
 
 Or update alredy installed extension
 
 ```shell
-docker extensions update caretdev/intersystems-extension:0.0.3
+docker extension update caretdev/intersystems-extension:0.0.3
 ```
 
 And you can access to installed extension from Extensions list in Docker Desktop
