@@ -4,28 +4,32 @@
       "repository": "intersystems/iris-community",
       "tags": [
         "2021.2.0.651.0",
-        "2022.1.0.209.0"
+        "2022.1.0.209.0",
+        "2022.2.0.304.0"
       ]
     },
     {
       "repository": "intersystems/iris-community-arm64",
       "tags": [
         "2021.2.0.651.0",
-        "2022.1.0.209.0"
+        "2022.1.0.209.0",
+        "2022.2.0.304.0"
       ]
     },
     {
       "repository": "intersystems/iris-ml-community",
       "tags": [
         "2021.2.0.651.0",
-        "2022.1.0.209.0"
+        "2022.1.0.209.0",
+        "2022.2.0.304.0"
       ]
     },
     {
       "repository": "intersystems/iris-ml-community-arm64",
       "tags": [
         "2021.2.0.651.0",
-        "2022.1.0.209.0"
+        "2022.1.0.209.0",
+        "2022.2.0.304.0"
       ]
     },
     {
@@ -38,28 +42,32 @@
       "repository": "intersystems/irishealth-community",
       "tags": [
         "2021.2.0.651.0",
-        "2022.1.0.209.0"
+        "2022.1.0.209.0",
+        "2022.2.0.304.0"
       ]
     },
     {
       "repository": "intersystems/irishealth-community-arm64",
       "tags": [
         "2021.2.0.651.0",
-        "2022.1.0.209.0"
+        "2022.1.0.209.0",
+        "2022.2.0.304.0"
       ]
     },
     {
       "repository": "intersystems/irishealth-ml-community",
       "tags": [
         "2021.2.0.651.0",
-        "2022.1.0.209.0"
+        "2022.1.0.209.0",
+        "2022.2.0.304.0"
       ]
     },
     {
       "repository": "intersystems/irishealth-ml-community-arm64",
       "tags": [
         "2021.2.0.651.0",
-        "2022.1.0.209.0"
+        "2022.1.0.209.0",
+        "2022.2.0.304.0"
       ]
     },
     {

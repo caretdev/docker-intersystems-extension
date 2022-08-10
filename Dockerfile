@@ -24,19 +24,21 @@ RUN \
     ls -la
 
 FROM alpine
+
+ARG detailed_description=
+
 LABEL \
     org.opencontainers.image.title="InterSystems" \
-    org.opencontainers.image.description="View Docker images from InterSystems" \
+    org.opencontainers.image.description="Convenient way to access InterSystems Container Registry, public and private images of such products as IRIS and IRIS for Health and many others in one place." \
     org.opencontainers.image.vendor="CaretDev Corp." \
     com.docker.desktop.extension.api.version=">= 0.2.3" \
-    com.docker.extension.detailed-description="This extension allows to see all available images with InterSystems IRIS and InterSystems tools" \
+    com.docker.extension.detailed-description=${detailed_description} \
     com.docker.extension.screenshots="[{\"url\":\"https://raw.githubusercontent.com/caretdev/docker-intersystems-extension/main/img/screenshot1.png\",\"alt\":\"Community images\"},{\"url\":\"https://raw.githubusercontent.com/caretdev/docker-intersystems-extension/main/img/screenshot2.png\",\"alt\":\"Community ARM64 images\"}]" \
     com.docker.extension.publisher-url="https://github.com/caretdev/docker-intersystems-extension" \
-    com.docker.extension.additional-urls="[{\"title\":\"InterSystems\",\"url\":\"https://intersystems.com/\"},{\"title\":\"Feedback\",\"url\":\"https://github.com/caretdev/docker-intersystems-extension/issues\"}]" \
+    com.docker.extension.additional-urls="[{\"title\":\"InterSystems\",\"url\":\"https://intersystems.com/\"},{\"title\":\"Support\",\"url\":\"https://github.com/caretdev/docker-intersystems-extension/issues\"},{\"title\":\"Discord\",\"url\":\"https://discord.gg/Bt5DUwJhdt\"}]" \
     com.docker.extension.changelog="" \
     com.docker.desktop.extension.icon="https://raw.githubusercontent.com/caretdev/docker-intersystems-extension/main/intersystems.svg"
 
-COPY docker-compose.yaml .
 COPY metadata.json .
 COPY intersystems.svg .
 COPY --from=client-builder /ui/build ui
@@ -44,7 +46,3 @@ COPY --from=client-builder /ui/build ui
 COPY --from=docker-ls /darwin/docker-ls /darwin/
 COPY --from=docker-ls /linux/docker-ls /linux/
 COPY --from=docker-ls /windows/docker-ls.exe /windows/
-
-# COPY --from=builder /backend/bin/service /
-# CMD /service -socket /run/guest-services/docker-intersystems.sock
-# CMD /service -port 48739

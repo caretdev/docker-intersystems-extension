@@ -1,14 +1,14 @@
 import * as React from 'react';
 import Alert from '@mui/material/Alert';
 import TabPanel from './components/TabPanel';
-import { Images, Image } from './Images';
+import { Images, Image, ImageState } from './Images';
 import Box from '@mui/material/Box';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import LinearProgress from '@mui/material/LinearProgress';
 import Typography from '@mui/material/Typography';
 import { createDockerDesktopClient } from '@docker/extension-api-client';
-import { AppBar, IconButton, Snackbar, Toolbar } from '@mui/material';
+import { AppBar, IconButton, Snackbar, Toolbar, Tooltip } from '@mui/material';
 import { Refresh } from '@mui/icons-material';
 
 const REGISTRY = 'containers.intersystems.com';
@@ -74,7 +74,6 @@ try {
 } catch (err) {
   ddClientError = err.message;
 }
-let imagesLoaded = false;
 let allImages: Image[] = [];
 let needUpdateRegistry = !localStorage.hasOwnProperty(REGISTRY);
 
@@ -134,10 +133,19 @@ export function App() {
   const [value, setValue] = React.useState(0);
   const [errorMsg] = React.useState(ddClientError);
   const [images, setImages] = React.useState<Image[]>(allImages);
-  const [loaded, setLoaded] = React.useState<string[] | null>(null);
+  const [imagesState, setImagesState] = React.useState<ImageState>({});
   const [loading, setLoading] = React.useState(false);
   const [updateRegistry, setUpdateRegistry] =
     React.useState(needUpdateRegistry);
+
+  React.useEffect(() => {
+    loadDockerImages().then((list) => {
+      list.forEach((el) => {
+        imagesState[el] = 'idle';
+      });
+      setImagesState({ ...imagesState });
+    });
+  }, [images, value]);
 
   if (!allImages.length) {
     importData().then((images) => {
@@ -165,36 +173,80 @@ export function App() {
           setLoading(false);
         });
     }
-    if (!imagesLoaded) {
-      imagesLoaded = true;
-      loadDockerImages().then((list) => {
-        setLoaded(list);
-      });
-    }
   }
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
   };
 
+  const setImageState = (fullName: string, state: string | null) => {
+    if (state) {
+      imagesState[fullName] = state;
+    } else {
+      delete imagesState[fullName];
+    }
+    setImagesState({ ...imagesState });
+  };
+
   const pullImage = (image: string, tag: string) => {
     const fullName = `${image}:${tag}`;
-    setLoaded([...(loaded || []), fullName]);
-    ddClient?.docker.cli
-      .exec('pull', [fullName])
-      .then(() =>
-        ddClient.desktopUI.toast.success(`Docker image ${fullName} pulled`),
-      );
+    setImageState(fullName, 'pull');
+
+    const progress: { [key: string]: string } = {};
+    const statusCost: { [key: string]: number } = {
+      'Pulling fs layer': 1,
+      Waiting: 2,
+      'Verifying Checksum': 3,
+      'Download complete': 4,
+      'Already exists': 5,
+      'Pull complete': 5,
+    };
+    const countProgress = () => {
+      const all = Object.entries(progress).length * 5;
+      const curr = Object.values(progress)
+        .map((status) => statusCost[status] || 0)
+        .reduce((a, b) => a + b, 0);
+      return Math.ceil((curr / all) * 100);
+    };
+
+    ddClient?.docker.cli.exec('pull', [fullName], {
+      stream: {
+        onOutput(data) {
+          const line = data.stdout || '';
+          if (line.indexOf(':') === 12) {
+            const [hash, status] = line.split(': ');
+            progress[hash] = status;
+            setImageState(fullName, 'pull:' + countProgress());
+          }
+        },
+        onError(error) {
+          console.error(error);
+        },
+        onClose(exitCode) {
+          ddClient.desktopUI.toast.success(`Docker image ${fullName} pulled`);
+          setImageState(fullName, 'idle');
+        },
+        splitOutputLines: true,
+      },
+    });
   };
 
   const rmImage = (image: string, tag: string) => {
     const fullName = `${image}:${tag}`;
-    setLoaded([...(loaded || []), fullName]);
-    ddClient?.docker.cli
-      .exec('rm', [fullName])
-      .then(() =>
-        ddClient.desktopUI.toast.warning(`Docker image ${fullName} deleted`),
-      );
+    setImageState(fullName, 'rm');
+    ddClient?.docker.cli.exec('rmi', [fullName], {
+      stream: {
+        onOutput(data) {},
+        onError(error) {
+          console.error(error);
+        },
+        onClose(exitCode) {
+          ddClient.desktopUI.toast.warning(`Docker image ${fullName} deleted`);
+          setImageState(fullName, null);
+        },
+        splitOutputLines: true,
+      },
+    });
   };
 
   return (
@@ -202,16 +254,22 @@ export function App() {
       <AppBar position="fixed" color="transparent">
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            containers.intersystems.com
+            <img
+              alt="InterSystems"
+              src="intersystems-logo.svg"
+              height={'50px'}
+            />
           </Typography>
-          <IconButton
-            size="large"
-            aria-label="refresh"
-            color="inherit"
-            onClick={() => setUpdateRegistry(true)}
-          >
-            <Refresh />
-          </IconButton>
+          <Tooltip title="Refresh from registry">
+            <IconButton
+              size="large"
+              aria-label="refresh"
+              color="inherit"
+              onClick={() => setUpdateRegistry(true)}
+            >
+              <Refresh />
+            </IconButton>
+          </Tooltip>
         </Toolbar>
       </AppBar>
       <Box>
@@ -233,7 +291,7 @@ export function App() {
         <TabPanel value={value} index={0}>
           <Images
             images={images}
-            loaded={loaded}
+            imagesState={imagesState}
             kind={'iris'}
             root="intersystems"
             onPull={pullImage}
@@ -244,7 +302,7 @@ export function App() {
         <TabPanel value={value} index={1}>
           <Images
             images={images}
-            loaded={loaded}
+            imagesState={imagesState}
             kind={'tools'}
             root="intersystems"
             onPull={pullImage}
@@ -256,7 +314,7 @@ export function App() {
           <TabPanel value={value} index={2}>
             <Images
               images={images}
-              loaded={loaded}
+              imagesState={imagesState}
               kind={'tools'}
               root="iscinternal"
               onPull={pullImage}

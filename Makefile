@@ -1,21 +1,15 @@
 IMAGE?=caretdev/intersystems-extension
-TAG?=0.0.3
+TAG?=0.1.0
 
 BUILDER=buildx-multi-arch
-
-STATIC_FLAGS=CGO_ENABLED=0
-LDFLAGS="-s -w"
-GO_BUILD=$(STATIC_FLAGS) go build -trimpath -ldflags=$(LDFLAGS)
 
 INFO_COLOR = \033[0;36m
 NO_COLOR   = \033[m
 
-bin: ## Build the binary for the current platform
-	@echo "$(INFO_COLOR)Building...$(NO_COLOR)"
-	$(GO_BUILD) -o bin/service ./vm
+description=$(shell cat extension.html | awk '{print}' ORS=' ')
 
 build-extension: ## Build service image to be deployed as a desktop extension
-	docker build --tag=$(IMAGE):$(TAG) .
+	docker build --tag=$(IMAGE):$(TAG) --build-arg 'detailed_description=$(description)' .
 
 install-extension: build-extension ## Install the extension
 	docker extension install -f $(IMAGE):$(TAG)

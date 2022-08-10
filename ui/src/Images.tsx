@@ -20,11 +20,18 @@ import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import ClearOutlinedIcon from '@mui/icons-material/ClearOutlined';
 import LockIcon from '@mui/icons-material/Lock';
-import { Link, Grid } from '@mui/material';
+import { Link, Grid, CircularProgress } from '@mui/material';
 import { PublicOutlined } from '@mui/icons-material';
+import LoadingButton from '@mui/lab/LoadingButton';
+
+// export type State = 'idle' | 'pull' | 'rm' | 'inuse' | 'nope';
+export interface ImageState {
+  [key: string]: string;
+}
+
 interface ImagesProps {
   images: Image[];
-  loaded: string[] | null;
+  imagesState: ImageState;
   root: 'intersystems' | 'iscinternal';
   kind: 'iris' | 'tools';
   arm?: boolean;
@@ -118,10 +125,8 @@ const isARM =
   !window.navigator.platform.endsWith('Intel');
 
 export function Images(props: ImagesProps) {
-  const { kind, images, loaded, root } = props;
-  const [community, setCommunity] = React.useState(
-    !images.find((image) => image.name === 'iris'),
-  );
+  const { kind, images, imagesState, root } = props;
+  const [community, setCommunity] = React.useState(true);
   const [arm, setArm] = React.useState(isARM);
   const [uniqueMajor, setUniqueMajor] = React.useState(true);
   const [filterName, setFilterName] = React.useState('');
@@ -150,6 +155,51 @@ export function Images(props: ImagesProps) {
         ),
       }));
     return result;
+  };
+
+  const action = (fullName: string, tag: string) => {
+    const imageState = imagesState[`${fullName}:${tag}`] || 'nope';
+    const [name, value] = imageState.split(':');
+    switch (name) {
+      case 'idle':
+        return (
+          <Button
+            size="small"
+            variant="contained"
+            color="error"
+            onClick={() => props.onDelete && props.onDelete(fullName, tag)}
+          >
+            Delete
+          </Button>
+        );
+
+      case 'rm':
+      case 'pull':
+        return (
+          <Button size="small" disabled={true} variant="contained">
+            <CircularProgress
+              color="inherit"
+              size={16}
+              variant={value ? 'determinate' : 'indeterminate'}
+              value={parseInt(value, 10)}
+            />
+            &nbsp;{value ? `${value}%` : ''}
+          </Button>
+        );
+
+      case 'nope':
+        return (
+          <Button
+            size="small"
+            variant="contained"
+            onClick={() => props.onPull && props.onPull(fullName, tag)}
+          >
+            Pull
+          </Button>
+        );
+      default:
+        return <></>;
+    }
   };
 
   return (
@@ -290,10 +340,10 @@ export function Images(props: ImagesProps) {
                           alignItems="center"
                           spacing={1}
                           sx={{
-                            flexWrap: 'nowrap'
+                            flexWrap: 'nowrap',
                           }}
                         >
-                          <Grid item >
+                          <Grid item>
                             {image.publicAccess ? (
                               <PublicOutlined />
                             ) : (
@@ -332,23 +382,7 @@ export function Images(props: ImagesProps) {
                     {/* <TableCell></TableCell> */}
                     {/* <TableCell></TableCell> */}
                     <TableCell align="right">
-                      {(!loaded ||
-                        !loaded.includes(`${image.fullName}:${tag}`)) && (
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={() =>
-                            props.onPull && props.onPull(image.fullName, tag)
-                          }
-                        >
-                          Pull
-                        </Button>
-                      )}
-                      {loaded && loaded.includes(`${image.fullName}:${tag}`) && (
-                        <Button size="small" variant="outlined" color="error">
-                          Delete
-                        </Button>
-                      )}
+                      {action(image.fullName, tag)}
                     </TableCell>
                   </TableRow>
                 ),
