@@ -2,6 +2,7 @@ import * as React from 'react';
 import Alert from '@mui/material/Alert';
 import TabPanel from './components/TabPanel';
 import { Images, Image, ImageState } from './Images';
+import { Help } from './Help';
 import Box from '@mui/material/Box';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
@@ -9,7 +10,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import Typography from '@mui/material/Typography';
 import { createDockerDesktopClient } from '@docker/extension-api-client';
 import { AppBar, IconButton, Snackbar, Toolbar, Tooltip } from '@mui/material';
-import { Refresh } from '@mui/icons-material';
+import { QuestionMark, Refresh } from '@mui/icons-material';
 
 const REGISTRY = 'containers.intersystems.com';
 
@@ -77,9 +78,9 @@ try {
 let allImages: Image[] = [];
 let needUpdateRegistry = !localStorage.hasOwnProperty(REGISTRY);
 
-const copyToClipboard = (value: string) => {
+export const copyToClipboard = (value: string, showValue = true) => {
   navigator.clipboard.writeText(value);
-  ddClient?.desktopUI?.toast?.success(`${value} copied to clipboard`);
+  ddClient?.desktopUI?.toast?.success(showValue ? `${value} copied to clipboard` : "Copied to clipboard");
 };
 
 interface DockerImage {
@@ -135,15 +136,31 @@ export function App() {
   const [images, setImages] = React.useState<Image[]>(allImages);
   const [imagesState, setImagesState] = React.useState<ImageState>({});
   const [loading, setLoading] = React.useState(false);
+  const [showHelp, setShowHelp] = React.useState(false);
+  const [latest, setLatest] = React.useState('');
   const [updateRegistry, setUpdateRegistry] =
     React.useState(needUpdateRegistry);
+
+  const setImageState = (fullName: string, state: string) => {
+    setImagesState((prevState: ImageState) => ({
+      ...prevState,
+      [fullName]: state,
+    }));
+  };
+
+  React.useEffect(() => {
+    const iris = images.find((el) => el.name === 'iris-community');
+    if (iris) {
+      const latest = `${iris.repository}/${iris.name}:${iris.tags[0]}`;
+      setLatest(latest);
+    }
+  }, [images]);
 
   React.useEffect(() => {
     loadDockerImages().then((list) => {
       list.forEach((el) => {
-        imagesState[el] = 'idle';
+        setImageState(el, 'idle');
       });
-      setImagesState({ ...imagesState });
     });
   }, [images, value]);
 
@@ -177,15 +194,6 @@ export function App() {
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
-  };
-
-  const setImageState = (fullName: string, state: string | null) => {
-    if (state) {
-      imagesState[fullName] = state;
-    } else {
-      delete imagesState[fullName];
-    }
-    setImagesState({ ...imagesState });
   };
 
   const pullImage = (image: string, tag: string) => {
@@ -242,7 +250,7 @@ export function App() {
         },
         onClose(exitCode) {
           ddClient.desktopUI.toast.warning(`Docker image ${fullName} deleted`);
-          setImageState(fullName, null);
+          setImageState(fullName, 'nope');
         },
         splitOutputLines: true,
       },
@@ -268,6 +276,16 @@ export function App() {
               onClick={() => setUpdateRegistry(true)}
             >
               <Refresh />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Show help">
+            <IconButton
+              size="large"
+              aria-label="help"
+              color="inherit"
+              onClick={() => setShowHelp(true)}
+            >
+              <QuestionMark />
             </IconButton>
           </Tooltip>
         </Toolbar>
@@ -324,6 +342,7 @@ export function App() {
           </TabPanel>
         )}
       </Box>
+      <Help open={showHelp} onClose={() => setShowHelp(false)} latest={latest} />
     </>
   );
 }

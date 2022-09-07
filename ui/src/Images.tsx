@@ -22,7 +22,6 @@ import ClearOutlinedIcon from '@mui/icons-material/ClearOutlined';
 import LockIcon from '@mui/icons-material/Lock';
 import { Link, Grid, CircularProgress } from '@mui/material';
 import { PublicOutlined } from '@mui/icons-material';
-import LoadingButton from '@mui/lab/LoadingButton';
 
 // export type State = 'idle' | 'pull' | 'rm' | 'inuse' | 'nope';
 export interface ImageState {
