@@ -1,12 +1,12 @@
 import Modal, { ModalProps } from '@mui/material/Modal';
-import Link from '@mui/material/Link';
+import Link, { LinkProps } from '@mui/material/Link';
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import helpLogin from './login.png';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 
-import { copyToClipboard } from './App';
+import { copyToClipboard, openExternal } from './App';
 import IconButton from '@mui/material/IconButton';
 
 const style = {
@@ -63,16 +63,14 @@ function CodeBlock(props: { code: string }) {
   );
 }
 
-function CopyLink(props: { href: string }) {
+function ExternalLink(props: LinkProps & { href: string }) {
   return (
-    <Tooltip title="Copy">
-      <Link
-        style={{ cursor: 'pointer' }}
-        onClick={() => copyToClipboard(props.href)}
-      >
-        {props.href}
-      </Link>
-    </Tooltip>
+    <Link
+      style={{ cursor: 'pointer' }}
+      onClick={() => openExternal(props.href)}
+    >
+      {props.children || props.href}
+    </Link>
   );
 }
 
@@ -138,13 +136,24 @@ export function Help(props: Omit<ModalProps, 'children'> & { latest: string }) {
           </Typography>
           <Typography sx={styleParagraph}>
             When it successfully started go to System Management Portal{' '}
-            <CopyLink href="http://localhost:52773/csp/sys/UtilHome.csp" />. By
-            default User Name:{' '}
-            <code style={{cursor: 'pointer'}} onClick={() => copyToClipboard('_SYSTEM', false)}>_SYSTEM</code> and
-            Password: <code style={{cursor: 'pointer'}} onClick={() => copyToClipboard('SYS', false)}>SYS</code>.
-            With the first login it will offer to change password. For futher
+            <ExternalLink href="http://localhost:52773/csp/sys/UtilHome.csp" />.
+            By default User Name:{' '}
+            <code
+              style={{ cursor: 'pointer' }}
+              onClick={() => copyToClipboard('_SYSTEM', false)}
+            >
+              _SYSTEM
+            </code>{' '}
+            and Password:{' '}
+            <code
+              style={{ cursor: 'pointer' }}
+              onClick={() => copyToClipboard('SYS', false)}
+            >
+              SYS
+            </code>
+            . With the first login it will offer to change password. For futher
             information on how to work with IRIS look at the documentation{' '}
-            <CopyLink href="https://docs.intersystems.com/" />.
+            <ExternalLink href="https://docs.intersystems.com/" />.
           </Typography>
         </Box>
         <div>
@@ -155,11 +164,14 @@ export function Help(props: Omit<ModalProps, 'children'> & { latest: string }) {
             To get access to non-comminoty images, you have to log into the
             InteSystems Container Registry, take the following steps:
             <li>
-              Load <CopyLink href="https://containers.intersystems.com/" /> in
-              your browser and log in with your InterSystems/WRC(World Responce
-              Center) credentials. If you do not have credentials, yet, you can
-              register at{' '}
-              <CopyLink href="https://evaluation.intersystems.com/" />,{' '}
+              Load <ExternalLink href="https://containers.intersystems.com/" />{' '}
+              in your browser and log in with your InterSystems/WRC(World
+              Responce Center) credentials. If you do not have credentials, yet,
+              you can register at{' '}
+              <ExternalLink href="https://login.intersystems.com/login/SSO.UI.Register.cls?referrer=https://containers.intersystems.com">
+                https://login.intersystems.com
+              </ExternalLink>
+              ,{' '}
               <i>
                 but remember that you still have to bring your own license for
                 non-community images of IRIS

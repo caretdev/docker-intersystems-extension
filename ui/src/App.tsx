@@ -83,6 +83,10 @@ export const copyToClipboard = (value: string, showValue = true) => {
   ddClient?.desktopUI?.toast?.success(showValue ? `${value} copied to clipboard` : "Copied to clipboard");
 };
 
+export const openExternal = (value: string) => {
+  ddClient?.host?.openExternal(value);
+};
+
 interface DockerImage {
   RepoTags: string[];
 }

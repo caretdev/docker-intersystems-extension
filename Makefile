@@ -28,7 +28,7 @@ prepare-buildx: BUILD_FLAGS+= --builder=$(BUILDER) --platform=linux/amd64,linux/
 	docker buildx inspect $(BUILDER) || docker buildx create --name=$(BUILDER) --driver=docker-container --driver-opt=network=host
 
 push-extension: ## Build & Upload extension image to hub. Do not push if tag already exists: make push-extension tag=0.1
-	# docker pull $(IMAGE):$(TAG) && echo "Failure: Tag already exists" || docker buildx build --push $(BUILD_FLAGS) .
+	docker pull $(IMAGE):$(TAG) && echo "Failure: Tag already exists" || docker buildx build --push $(BUILD_FLAGS) .
 
 debug:
 	docker extension dev debug $(IMAGE)
