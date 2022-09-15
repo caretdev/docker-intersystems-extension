@@ -253,7 +253,7 @@ export function App() {
           console.error(error);
         },
         onClose(exitCode) {
-          ddClient.desktopUI.toast.warning(`Docker image ${fullName} deleted`);
+          ddClient.desktopUI.toast.success(`Docker image ${fullName} deleted`);
           setImageState(fullName, 'nope');
         },
         splitOutputLines: true,
