@@ -4,7 +4,7 @@ TAG?=$(shell jq -r '.version' ui/package.json)
 DESCRIPTION=$(shell cat extension.html | awk '{print}' ORS=' ')
 
 BUILDER=buildx-multi-arch
-BUILD_FLAGS=--build-arg TAG=$(TAG) --tag=$(IMAGE):$(TAG) --tag=$(IMAGE):latest --build-arg 'detailed_description=$(DESCRIPTION)'
+BUILD_FLAGS=--build-arg TAG=$(TAG) --tag=$(IMAGE):$(TAG) --tag=$(IMAGE):latest --build-arg 'detailed_description=$(DESCRIPTION)' --progress plain
 
 INFO_COLOR = \033[0;36m
 NO_COLOR   = \033[m

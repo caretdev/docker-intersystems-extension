@@ -1,8 +1,8 @@
-FROM --platform=$BUILDPLATFORM node:17.7-alpine3.14 AS client-builder
+FROM --platform=$BUILDPLATFORM node:16-alpine AS client-builder
 WORKDIR /ui
 # cache packages in layer
 COPY ui/package.json /ui/package.json
-COPY ui/package-lock.json /ui/package-lock.json
+COPY ui/yarn.lock /ui/yarn.lock
 ARG TARGETARCH
 RUN yarn config set cache-folder /usr/local/share/.cache/yarn-${TARGETARCH}
 RUN --mount=type=cache,target=/usr/local/share/.cache/yarn-${TARGETARCH} yarn

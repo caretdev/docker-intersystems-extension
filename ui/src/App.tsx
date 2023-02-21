@@ -28,8 +28,13 @@ const setFlags = (repo: {
   name: string;
   tags: string[];
 }): Image => {
-  const { root, name, tags } = repo;
-  const arch = repo.name.endsWith('-arm64') ? 'arm64' : 'x64';
+  const { root, name } = repo;
+  const allTags = repo.tags.filter(tag => !tag.includes('-linux-'))
+  const arch = {
+    'amd64': repo.name.endsWith('-arm64') ? [] : repo.tags.filter(tag => !tag.includes('-linux-')),
+    'arm64': repo.name.endsWith('-arm64') ? allTags : repo.tags.filter(tag => tag.includes('-linux-arm64')).map(tag => tag.split('-')[0])
+  }
+  const tags = repo.tags.filter(tag => !tag.includes('-linux-'))
   const repoParts = repo.name.split('-');
   const kind =
     repo.name.startsWith('iris') && repo.name !== 'iris-operator'
@@ -52,7 +57,7 @@ const setFlags = (repo: {
     name,
     fullName: `${REGISTRY}/${root}/${name}`,
     publicAccess,
-    tags,
+    // tags,
     arch,
     edition,
     kind,
@@ -155,7 +160,7 @@ export function App() {
   React.useEffect(() => {
     const iris = images.find((el) => el.name === 'iris-community');
     if (iris) {
-      const latest = `${iris.repository}/${iris.name}:${iris.tags[0]}`;
+      const latest = `${iris.repository}/${iris.name}:${iris.arch.amd64[0]}`;
       setLatest(latest);
     }
   }, [images]);
@@ -248,7 +253,7 @@ export function App() {
     setImageState(fullName, 'rm');
     ddClient?.docker.cli.exec('rmi', [fullName], {
       stream: {
-        onOutput(data) {},
+        onOutput(data) { },
         onError(error) {
           console.error(error);
         },

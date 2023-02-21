@@ -42,14 +42,17 @@ interface ImagesProps {
 
 type RepositoryKind = 'iris' | 'tools';
 type RepositoryEdition = 'any' | 'general' | 'community';
-type RepositoryArch = 'any' | 'x64' | 'arm64';
+export interface RepositoryArch {
+  'arm64': string[];
+  'amd64': string[];
+}
 
 export interface Image {
   repository: string;
   root: string;
   name: string;
   fullName: string;
-  tags: string[];
+  // tags: string[];
   arch: RepositoryArch;
   edition: RepositoryEdition;
   kind: RepositoryKind;
@@ -141,16 +144,16 @@ export function Images(props: ImagesProps) {
           ? ['community', 'any'].includes(repo.edition)
           : ['general', 'any'].includes(repo.edition),
       )
-      .filter((repo) =>
-        arm
-          ? ['arm64', 'any'].includes(repo.arch)
-          : ['x64', 'any'].includes(repo.arch),
-      )
+      // .filter((repo) =>
+      //   arm
+      //     ? ['arm64', 'any'].includes(repo.arch)
+      //     : ['x64', 'any'].includes(repo.arch),
+      // )
       .filter((repo) => !filterName || repo.name.includes(filterName))
       .map((repo) => ({
         ...repo,
-        tags: sortTags(repo.tags, uniqueMajor).filter(
-          (tag) => !filterTag || tag.includes(filterTag),
+        tags: sortTags(repo.arch[arm ? 'arm64' : 'amd64'], uniqueMajor).filter(
+          (tag) => tag && (!filterTag || tag.includes(filterTag)),
         ),
       }));
     return result;
