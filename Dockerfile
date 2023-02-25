@@ -13,17 +13,21 @@ RUN --mount=type=cache,target=/usr/local/share/.cache/yarn-${TARGETARCH} \
 
 FROM alpine as docker-ls
 
+ARG TARGETARCH
+
+WORKDIR /docker-ls
+
 RUN \
     apk add --update zip wget && \
-    wget --inet4-only https://github.com/mayflower/docker-ls/releases/download/v0.5.1/docker-ls-darwin-amd64.zip && \
-    unzip docker-ls-darwin-amd64.zip -d darwin && \
-    wget --inet4-only https://github.com/mayflower/docker-ls/releases/download/v0.5.1/docker-ls-linux-amd64.zip && \
-    unzip docker-ls-linux-amd64.zip -d linux && \
-    wget --inet4-only https://github.com/mayflower/docker-ls/releases/download/v0.5.1/docker-ls-windows-amd64.zip && \
+    wget https://github.com/caretdev/docker-ls/releases/download/latest/docker-ls-darwin-${TARGETARCH}.zip && \
+    unzip docker-ls-darwin-${TARGETARCH}.zip -d darwin && \
+    wget https://github.com/caretdev/docker-ls/releases/download/latest/docker-ls-linux-${TARGETARCH}.zip && \
+    unzip docker-ls-linux-${TARGETARCH}.zip -d linux && \
+    wget https://github.com/caretdev/docker-ls/releases/download/latest/docker-ls-windows-amd64.zip && \
     unzip docker-ls-windows-amd64.zip -d windows && \
-    ls -la
+    find . -type f -exec ls -la {} \;
 
-FROM alpine
+FROM alpine as extension
 
 ARG detailed_description=
 
@@ -32,6 +36,7 @@ LABEL \
     org.opencontainers.image.description="Convenient way to access InterSystems Container Registry, public and private images of such products as IRIS and IRIS for Health and many others in one place." \
     org.opencontainers.image.vendor="CaretDev Corp." \
     com.docker.desktop.extension.api.version=">= 0.2.3" \
+    com.docker.extension.categories="image-registry" \
     com.docker.extension.detailed-description=${detailed_description} \
     com.docker.extension.screenshots="[{\"url\":\"https://raw.githubusercontent.com/caretdev/docker-intersystems-extension/main/img/screenshot1.png\",\"alt\":\"Community images\"},{\"url\":\"https://raw.githubusercontent.com/caretdev/docker-intersystems-extension/main/img/screenshot2.png\",\"alt\":\"Community ARM64 images\"}]" \
     com.docker.extension.publisher-url="https://github.com/caretdev/docker-intersystems-extension" \
@@ -43,6 +48,6 @@ COPY metadata.json .
 COPY intersystems.svg .
 COPY --from=client-builder /ui/build ui
 
-COPY --from=docker-ls /darwin/docker-ls /darwin/
-COPY --from=docker-ls /linux/docker-ls /linux/
-COPY --from=docker-ls /windows/docker-ls.exe /windows/
+COPY --from=docker-ls /docker-ls/darwin/docker-ls /darwin/
+COPY --from=docker-ls /docker-ls/linux/docker-ls /linux/
+COPY --from=docker-ls /docker-ls/windows/docker-ls.exe /windows/

@@ -52,7 +52,6 @@ export interface Image {
   root: string;
   name: string;
   fullName: string;
-  // tags: string[];
   arch: RepositoryArch;
   edition: RepositoryEdition;
   kind: RepositoryKind;

@@ -34,7 +34,6 @@ const setFlags = (repo: {
     'amd64': repo.name.endsWith('-arm64') ? [] : repo.tags.filter(tag => !tag.includes('-linux-')),
     'arm64': repo.name.endsWith('-arm64') ? allTags : repo.tags.filter(tag => tag.includes('-linux-arm64')).map(tag => tag.split('-')[0])
   }
-  const tags = repo.tags.filter(tag => !tag.includes('-linux-'))
   const repoParts = repo.name.split('-');
   const kind =
     repo.name.startsWith('iris') && repo.name !== 'iris-operator'
@@ -57,7 +56,6 @@ const setFlags = (repo: {
     name,
     fullName: `${REGISTRY}/${root}/${name}`,
     publicAccess,
-    // tags,
     arch,
     edition,
     kind,
